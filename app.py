@@ -12,6 +12,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from datetime import date
 from models import TaskModel, ProgressModel
 from scheduler import SchedulerContext, AIScheduler, SimpleScheduler, compare_schedulers
+from ml_predictor import get_predictor
 
 app = Flask(__name__)
 app.secret_key = "study_planner_secret_2026"   # Needed for flash messages
@@ -276,6 +277,43 @@ def reschedule():
         changes         = result["changes"],
         warnings        = result["warnings"],
         available_hours = available_hours,
+    )
+
+# =============================================================================
+# Route 11: ML Predictor Page
+# =============================================================================
+
+@app.route("/predict", methods=["GET", "POST"])
+def predict():
+    tasks     = task_model.get_all_tasks()
+    completed = progress_model.get_completed()
+
+    predictor   = get_predictor()
+    train_status = predictor.train(tasks, completed)
+
+    prediction = None
+    form_data  = {}
+
+    if request.method == "POST":
+        difficulty   = int(request.form.get("difficulty", 3))
+        importance   = int(request.form.get("importance", 3))
+        planned_hrs  = float(request.form.get("planned_hours", 5))
+        subject      = request.form.get("subject", "")
+
+        prediction = predictor.predict(difficulty, importance, planned_hrs)
+        form_data  = {
+            "subject"       : subject,
+            "difficulty"    : difficulty,
+            "importance"    : importance,
+            "planned_hours" : planned_hrs,
+        }
+
+    return render_template(
+        "predict.html",
+        train_status = train_status,
+        prediction   = prediction,
+        form_data    = form_data,
+        tasks        = tasks,
     )
 # =============================================================================
 # Run the app
