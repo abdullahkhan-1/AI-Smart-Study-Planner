@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold">📊 Analytics Dashboard</h2>
+        <p class="text-muted">Visual breakdown of your study plan and performance</p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold" style="color:#e94560">{{ total_tasks }}</h1>
+            <p class="mb-0 text-muted">Total Tasks</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-success">{{ done_count }}</h1>
+            <p class="mb-0 text-muted">Subjects Covered</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-warning">{{ pending_count }}</h1>
+            <p class="mb-0 text-muted">Pending</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-primary">{{ summary.total_hours }}h</h1>
+            <p class="mb-0 text-muted">Hours Logged</p>
+        </div>
+    </div>
+</div>
+
+<!-- Row 1: Bar Chart + Pie Chart -->
+<div class="row g-4 mb-4">
+
+    <!-- Daily Workload Bar Chart -->
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-white fw-semibold">
+                📅 Daily Study Workload
+                <small class="text-muted fw-normal ms-2">(AI-generated schedule, hours per day)</small>
+            </div>
+            <div class="card-body">
+                {% if workload_labels %}
+                    <canvas id="workloadChart" height="120"></canvas>
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-bar-chart display-4"></i>
+                        <p class="mt-2">Add tasks first to see your workload chart.</p>
+                        <a href="/add" class="btn btn-primary btn-sm">Add a Task</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Completion Pie Chart -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-white fw-semibold">
+                ✅ Completion Status
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center">
+                {% if total_tasks > 0 %}
+                    <canvas id="completionChart" height="180"></canvas>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-pie-chart display-4"></i>
+                        <p class="mt-2">No tasks yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Row 2: Urgency Line Chart -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white fw-semibold">
+        🚨 Urgency Forecast
+        <small class="text-muted fw-normal ms-2">
+            (AI priority score per subject — higher = needs attention sooner)
+        </small>
+    </div>
+    <div class="card-body">
+        {% if urgency_labels %}
+            <canvas id="urgencyChart" height="80"></canvas>
+        {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-graph-up display-4"></i>
+                <p class="mt-2">Add tasks to see urgency forecast.</p>
+            </div>
+        {% endif %}
+
+        <!-- Explanation of the urgency score for the examiner -->
+        <div class="alert alert-light border mt-3 mb-0" style="font-size:0.85rem">
+            <strong>How the urgency score is calculated:</strong>
+            The AI uses a weighted heuristic formula:
+            <code>score = (0.50 × deadline_urgency) + (0.30 × difficulty) + (0.20 × importance)</code>.
+            A score above 0.75 means the task is high-priority and should be started immediately.
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+// ---- Shared color palette ----
+const red    = 'rgba(233, 69, 96, 0.85)';
+const redBdr = 'rgba(233, 69, 96, 1)';
+const green  = 'rgba(40, 167, 69, 0.85)';
+const amber  = 'rgba(255, 193, 7, 0.85)';
+const blue   = 'rgba(13, 110, 253, 0.85)';
+const gray   = 'rgba(108, 117, 125, 0.85)';
+
+// ---- Chart 1: Daily Workload (Bar) ----
+{% if workload_labels %}
+const workloadCtx = document.getElementById('workloadChart').getContext('2d');
+new Chart(workloadCtx, {
+    type: 'bar',
+    data: {
+        labels: {{ workload_labels | tojson }},
+        datasets: [{
+            label: 'Study Hours',
+            data: {{ workload_data | tojson }},
+            backgroundColor: {{ workload_data | tojson }}.map(h =>
+                h >= 3.5 ? 'rgba(220,53,69,0.8)' :
+                h >= 2.0 ? 'rgba(255,193,7,0.8)' :
+                           'rgba(40,167,69,0.8)'
+            ),
+            borderRadius: 6,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.raw}h scheduled`
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: { display: true, text: 'Hours' },
+                ticks: { stepSize: 1 }
+            },
+            x: {
+                ticks: { maxRotation: 45 }
+            }
+        }
+    }
+});
+{% endif %}
+
+// ---- Chart 2: Completion Pie ----
+{% if total_tasks > 0 %}
+const completionCtx = document.getElementById('completionChart').getContext('2d');
+new Chart(completionCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Covered', 'Pending'],
+        datasets: [{
+            data: [{{ done_count }}, {{ pending_count }}],
+            backgroundColor: [green, amber],
+            borderWidth: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.label}: ${ctx.raw} subject(s)`
+                }
+            }
+        },
+        cutout: '65%',
+    }
+});
+{% endif %}
+
+// ---- Chart 3: Urgency Forecast (Line) ----
+{% if urgency_labels %}
+const urgencyCtx = document.getElementById('urgencyChart').getContext('2d');
+new Chart(urgencyCtx, {
+    type: 'line',
+    data: {
+        labels: {{ urgency_labels | tojson }},
+        datasets: [{
+            label: 'Urgency Score (%)',
+            data: {{ urgency_data | tojson }},
+            borderColor: redBdr,
+            backgroundColor: 'rgba(233, 69, 96, 0.1)',
+            pointBackgroundColor: {{ urgency_data | tojson }}.map(s =>
+                s >= 75 ? 'rgba(220,53,69,1)' :
+                s >= 50 ? 'rgba(255,193,7,1)' :
+                          'rgba(40,167,69,1)'
+            ),
+            pointRadius: 7,
+            pointHoverRadius: 9,
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` Priority Score: ${ctx.raw}%`
+                }
+            }
+        },
+        scales: {
+            y: {
+                min: 0,
+                max: 100,
+                title: { display: true, text: 'Priority Score (%)' },
+                ticks: {
+                    callback: v => v + '%'
+                }
+            }
+        }
+    }
+});
+{% endif %}
+</script>
+
+{% endblock %}

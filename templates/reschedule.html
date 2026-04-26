@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h2 class="fw-bold">🔄 Adaptive Reschedule</h2>
+        <p class="text-muted">
+            Detects completed hours and rebuilds your plan with only what's remaining.
+        </p>
+    </div>
+    <div class="col-auto">
+        <form method="GET" class="d-flex align-items-center gap-2">
+            <label class="mb-0 text-muted" style="white-space:nowrap">Daily hours:</label>
+            <input type="number" name="hours" class="form-control form-control-sm"
+                   style="width:80px" min="1" max="12" step="0.5"
+                   value="{{ available_hours }}">
+            <button type="submit" class="btn btn-primary btn-sm">Recalculate</button>
+        </form>
+    </div>
+</div>
+
+<!-- Warnings -->
+{% if warnings %}
+<div class="alert alert-danger mb-4">
+    <strong>⚠ Scheduling Conflicts Detected</strong>
+    <ul class="mb-0 mt-2">
+        {% for w in warnings %}
+        <li>{{ w.message }}</li>
+        {% endfor %}
+    </ul>
+    <small class="d-block mt-2 text-muted">
+        Consider increasing your daily hours or asking for deadline extensions.
+    </small>
+</div>
+{% endif %}
+
+<!-- Status Summary Cards -->
+{% set complete_count   = changes | selectattr("status", "equalto", "complete")    | list | length %}
+{% set rescheduled_count= changes | selectattr("status", "equalto", "rescheduled") | list | length %}
+{% set overdue_count    = changes | selectattr("status", "equalto", "overdue")     | list | length %}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center p-3 border-success">
+            <h2 class="fw-bold text-success">{{ complete_count }}</h2>
+            <p class="mb-0 text-muted">Fully Covered</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center p-3 border-primary">
+            <h2 class="fw-bold text-primary">{{ rescheduled_count }}</h2>
+            <p class="mb-0 text-muted">Rescheduled</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center p-3 border-danger">
+            <h2 class="fw-bold text-danger">{{ overdue_count }}</h2>
+            <p class="mb-0 text-muted">Overdue</p>
+        </div>
+    </div>
+</div>
+
+<!-- What Changed Per Task -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white fw-semibold">
+        📋 Task-by-Task Breakdown
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Subject</th>
+                    <th>Deadline</th>
+                    <th>Total Hours</th>
+                    <th>Completed</th>
+                    <th>Remaining</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in changes %}
+            <tr>
+                <td class="fw-semibold">{{ c.subject }}</td>
+                <td>{{ c.deadline }}</td>
+                <td>{{ c.original_hours }}h</td>
+                <td class="text-success">{{ c.done_hours }}h</td>
+                <td>
+                    {% if c.remaining_hours > 0 %}
+                        <span class="fw-bold text-danger">{{ c.remaining_hours }}h</span>
+                    {% else %}
+                        <span class="text-success">0h</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c.status == "complete" %}
+                        <span class="badge bg-success">✅ Complete</span>
+                    {% elif c.status == "rescheduled" %}
+                        <span class="badge bg-primary">🔄 Rescheduled</span>
+                    {% elif c.status == "overdue" %}
+                        <span class="badge bg-danger">🚨 Overdue</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- New Adaptive Schedule -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white fw-semibold">
+        📅 Your Updated Schedule
+        <small class="fw-normal text-muted ms-2">
+            (Based on remaining hours only — completed work excluded)
+        </small>
+    </div>
+    <div class="card-body p-0">
+
+        {% if schedule %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Subject</th>
+                        <th>Hours</th>
+                        <th>Priority Score</th>
+                        <th>Deadline</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for day, sessions in schedule.items() %}
+                    {% for session in sessions %}
+                    <tr>
+                        {% if loop.first %}
+                        <td rowspan="{{ sessions|length }}"
+                            class="fw-semibold align-middle"
+                            style="border-right:3px solid #e94560">
+                            {{ day }}
+                        </td>
+                        {% endif %}
+                        <td>{{ session.subject }}</td>
+                        <td><span class="badge bg-primary">{{ session.hours }}h</span></td>
+                        <td>
+                            {% if session.priority_score is defined %}
+                            <span style="font-size:0.75rem;background:#1a1a2e;color:#e94560;
+                                         padding:2px 8px;border-radius:20px">
+                                {{ session.priority_score }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ session.deadline }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+                </tbody>
+            </table>
+
+        {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-check2-all display-4 text-success"></i>
+                <p class="mt-3 fw-semibold text-success">
+                    All tasks are fully covered! Nothing left to reschedule. 🎉
+                </p>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- How It Works -->
+<div class="card">
+    <div class="card-header bg-dark text-white fw-semibold">
+        🧠 How Adaptive Rescheduling Works
+    </div>
+    <div class="card-body">
+        <ol class="mb-0">
+            <li class="mb-2">
+                <strong>Detects progress</strong> — reads all sessions you've marked
+                complete from the Progress tracker.
+            </li>
+            <li class="mb-2">
+                <strong>Calculates remaining hours</strong> per subject:
+                <code>remaining = total_hours_needed − hours_already_done</code>
+            </li>
+            <li class="mb-2">
+                <strong>Re-runs the AI scheduler</strong> (Heuristic + Greedy EDF)
+                using only the remaining hours — completed work is not re-scheduled.
+            </li>
+            <li>
+                <strong>Flags conflicts</strong> — if remaining hours can't fit before
+                the deadline, a warning is shown so you can act early.
+            </li>
+        </ol>
+    </div>
+</div>
+
+{% endblock %}

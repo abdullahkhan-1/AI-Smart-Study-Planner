@@ -23,7 +23,6 @@ progress_model = ProgressModel()
 # Instantiate scheduler context (uses AIScheduler by default)
 scheduler_ctx  = SchedulerContext()
 
-
 # =============================================================================
 # Route 1: Home / Dashboard
 # =============================================================================
@@ -176,7 +175,108 @@ def progress():
     summary   = progress_model.get_summary()
     return render_template("progress.html", completed=completed, summary=summary)
 
+# =============================================================================
+# Route 8: Analytics / Visual Dashboard
+# =============================================================================
 
+@app.route("/analytics")
+def analytics():
+    """
+    Prepares data for 3 Chart.js visualizations:
+    1. Bar chart  — daily workload (hours per day from AI schedule)
+    2. Pie chart  — completion breakdown
+    3. Line chart — urgency forecast (priority score per task over time)
+    """
+    tasks           = task_model.get_all_tasks()
+    completed       = progress_model.get_completed()
+    summary         = progress_model.get_summary()
+
+    # --- Chart 1: Daily Workload ---
+    # Run the AI scheduler to get the schedule, then sum hours per day
+    raw_schedule = {}
+    if tasks:
+        raw_schedule = SchedulerContext().run(tasks, 4.0)
+
+    workload_labels = []
+    workload_data   = []
+    for day in sorted(raw_schedule.keys()):
+        workload_labels.append(str(day))
+        workload_data.append(sum(s["hours"] for s in raw_schedule[day]))
+
+    # --- Chart 2: Completion Pie ---
+    completed_subjects = {r["subject"] for r in completed}
+    all_subjects       = {t["subject"] for t in tasks}
+    done_count         = len(completed_subjects & all_subjects)
+    pending_count      = len(all_subjects) - done_count
+
+    # --- Chart 3: Urgency Forecast ---
+    # Sort tasks by deadline, show their priority score
+    ai_sched = AIScheduler()
+    urgency_labels = []
+    urgency_data   = []
+    for task in sorted(tasks, key=lambda t: t["deadline"]):
+        score = ai_sched.calculate_priority_score(task)
+        urgency_labels.append(task["subject"])
+        urgency_data.append(round(score * 100, 1))   # Convert to percentage
+
+    return render_template(
+        "analytics.html",
+        workload_labels  = workload_labels,
+        workload_data    = workload_data,
+        done_count       = done_count,
+        pending_count    = pending_count,
+        urgency_labels   = urgency_labels,
+        urgency_data     = urgency_data,
+        summary          = summary,
+        total_tasks      = len(tasks),
+    )
+# =============================================================================
+# Route 9: Pomodoro Timer
+# =============================================================================
+
+@app.route("/pomodoro")
+def pomodoro():
+    tasks = task_model.get_all_tasks()
+    return render_template("pomodoro.html", tasks=tasks)
+
+@app.route("/pomodoro/log", methods=["POST"])
+def log_pomodoro():
+    subject = request.form.get("subject")
+    hours   = float(request.form.get("hours", 0.42))  # 25 min = 0.42h
+    today   = date.today()
+    progress_model.mark_complete(subject, today, hours)
+    return {"status": "logged"}, 200
+
+# =============================================================================
+# Route 10: Adaptive Reschedule
+# =============================================================================
+
+@app.route("/reschedule")
+def reschedule():
+    tasks     = task_model.get_all_tasks()
+    completed = progress_model.get_completed()
+
+    if not tasks:
+        flash("Add some tasks first before rescheduling.", "info")
+        return redirect(url_for("index"))
+
+    available_hours = float(request.args.get("hours", 4.0))
+
+    from scheduler import adaptive_reschedule
+    result = adaptive_reschedule(tasks, completed, available_hours)
+
+    # Format schedule dates as strings for template
+    formatted_schedule = {
+        str(k): v for k, v in result["new_schedule"].items()
+    }
+
+    return render_template(
+        "reschedule.html",
+        schedule        = formatted_schedule,
+        changes         = result["changes"],
+        warnings        = result["warnings"],
+        available_hours = available_hours,
+    )
 # =============================================================================
 # Run the app
 # =============================================================================

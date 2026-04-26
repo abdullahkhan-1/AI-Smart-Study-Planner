@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+<div class="col-md-7">
+
+<div class="text-center mb-4">
+    <h2 class="fw-bold">⏱ Pomodoro Timer</h2>
+    <p class="text-muted">Focus 25 min → Break 5 min → Repeat. Every 4 rounds get a 15-min break.</p>
+</div>
+
+<!-- Subject Selector -->
+<div class="card mb-3">
+    <div class="card-body">
+        <label class="form-label fw-semibold">What are you studying?</label>
+        <select id="subjectSelect" class="form-select form-select-lg">
+            <option value="">-- Select a subject --</option>
+            {% for task in tasks %}
+            <option value="{{ task.subject }}">{{ task.subject }} (due {{ task.deadline }})</option>
+            {% endfor %}
+            <option value="General Study">General Study</option>
+        </select>
+    </div>
+</div>
+
+<!-- Timer Card -->
+<div class="card text-center mb-3" id="timerCard">
+    <div class="card-body py-5">
+
+        <!-- Mode label -->
+        <div class="mb-3">
+            <span id="modeLabel" class="badge fs-6 px-4 py-2 bg-dark">🎯 Focus Time</span>
+        </div>
+
+        <!-- Circular progress + time display -->
+        <div class="position-relative d-inline-block mb-4" style="width:220px;height:220px;">
+            <svg width="220" height="220" style="transform:rotate(-90deg)">
+                <circle cx="110" cy="110" r="95"
+                    fill="none" stroke="#e9ecef" stroke-width="10"/>
+                <circle id="progressRing" cx="110" cy="110" r="95"
+                    fill="none" stroke="#e94560" stroke-width="10"
+                    stroke-linecap="round"
+                    stroke-dasharray="597"
+                    stroke-dashoffset="0"
+                    style="transition: stroke-dashoffset 1s linear, stroke 0.5s"/>
+            </svg>
+            <div class="position-absolute top-50 start-50 translate-middle">
+                <div id="timeDisplay"
+                     style="font-size:3rem;font-weight:700;color:#1a1a2e;line-height:1">
+                    25:00
+                </div>
+                <div id="roundLabel" class="text-muted mt-1" style="font-size:0.85rem">
+                    Round 1 of 4
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="d-flex justify-content-center gap-3 mb-4">
+            <button id="startBtn" class="btn btn-primary btn-lg px-5" onclick="startTimer()">
+                ▶ Start
+            </button>
+            <button id="pauseBtn" class="btn btn-outline-secondary btn-lg px-4"
+                    onclick="pauseTimer()" style="display:none">
+                ⏸ Pause
+            </button>
+            <button class="btn btn-outline-danger btn-lg px-4" onclick="resetTimer()">
+                ↺ Reset
+            </button>
+        </div>
+
+        <!-- Round dots -->
+        <div class="d-flex justify-content-center gap-2">
+            <span id="dot1" class="rounded-circle d-inline-block" style="width:14px;height:14px;background:#e94560"></span>
+            <span id="dot2" class="rounded-circle d-inline-block" style="width:14px;height:14px;background:#dee2e6"></span>
+            <span id="dot3" class="rounded-circle d-inline-block" style="width:14px;height:14px;background:#dee2e6"></span>
+            <span id="dot4" class="rounded-circle d-inline-block" style="width:14px;height:14px;background:#dee2e6"></span>
+        </div>
+
+    </div>
+</div>
+
+<!-- Session Log (this session only) -->
+<div class="card">
+    <div class="card-header bg-dark text-white fw-semibold">
+        📋 Today's Sessions
+    </div>
+    <div class="card-body p-0">
+        <ul id="sessionLog" class="list-group list-group-flush">
+            <li class="list-group-item text-muted text-center py-3">
+                No sessions yet — start the timer!
+            </li>
+        </ul>
+    </div>
+</div>
+
+</div>
+</div>
+
+<script>
+// =============================================================================
+// Pomodoro Timer Logic
+// =============================================================================
+
+const FOCUS_MINS  = 25;
+const SHORT_BREAK = 5;
+const LONG_BREAK  = 15;
+const TOTAL_ROUNDS = 4;
+
+let mode          = 'focus';   // 'focus' | 'short' | 'long'
+let round         = 1;
+let totalSeconds  = FOCUS_MINS * 60;
+let remaining     = totalSeconds;
+let interval      = null;
+let isRunning     = false;
+let sessionsToday = [];
+
+const CIRCUMFERENCE = 2 * Math.PI * 95;   // 597px
+
+// --- DOM refs ---
+const timeDisplay  = document.getElementById('timeDisplay');
+const modeLabel    = document.getElementById('modeLabel');
+const roundLabel   = document.getElementById('roundLabel');
+const progressRing = document.getElementById('progressRing');
+const startBtn     = document.getElementById('startBtn');
+const pauseBtn     = document.getElementById('pauseBtn');
+const sessionLog   = document.getElementById('sessionLog');
+const dots         = [1,2,3,4].map(i => document.getElementById('dot'+i));
+
+function formatTime(secs) {
+    const m = String(Math.floor(secs / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    return `${m}:${s}`;
+}
+
+function updateRing() {
+    const progress  = remaining / totalSeconds;
+    const offset    = CIRCUMFERENCE * (1 - progress);
+    progressRing.style.strokeDashoffset = offset;
+}
+
+function updateDots() {
+    dots.forEach((dot, i) => {
+        dot.style.background = i < round ? '#e94560' : '#dee2e6';
+    });
+}
+
+function setMode(newMode) {
+    mode = newMode;
+    if (mode === 'focus') {
+        totalSeconds = FOCUS_MINS * 60;
+        modeLabel.textContent = '🎯 Focus Time';
+        modeLabel.className = 'badge fs-6 px-4 py-2 bg-dark';
+        progressRing.style.stroke = '#e94560';
+        roundLabel.textContent = `Round ${round} of ${TOTAL_ROUNDS}`;
+    } else if (mode === 'short') {
+        totalSeconds = SHORT_BREAK * 60;
+        modeLabel.textContent = '☕ Short Break';
+        modeLabel.className = 'badge fs-6 px-4 py-2 bg-success';
+        progressRing.style.stroke = '#28a745';
+        roundLabel.textContent = `Break after round ${round - 1}`;
+    } else {
+        totalSeconds = LONG_BREAK * 60;
+        modeLabel.textContent = '🛋 Long Break';
+        modeLabel.className = 'badge fs-6 px-4 py-2 bg-primary';
+        progressRing.style.stroke = '#0d6efd';
+        roundLabel.textContent = 'You earned this! 4 rounds done.';
+    }
+    remaining = totalSeconds;
+    timeDisplay.textContent = formatTime(remaining);
+    updateRing();
+    updateDots();
+}
+
+function startTimer() {
+    if (isRunning) return;
+
+    // Ask for notification permission on first start
+    if (Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    isRunning = true;
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-block';
+
+    interval = setInterval(() => {
+        remaining--;
+        timeDisplay.textContent = formatTime(remaining);
+        updateRing();
+
+        if (remaining <= 0) {
+            clearInterval(interval);
+            isRunning = false;
+            onTimerEnd();
+        }
+    }, 1000);
+}
+
+function pauseTimer() {
+    clearInterval(interval);
+    isRunning = false;
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+    startBtn.textContent = '▶ Resume';
+}
+
+function resetTimer() {
+    clearInterval(interval);
+    isRunning = false;
+    round = 1;
+    setMode('focus');
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+    startBtn.textContent = '▶ Start';
+}
+
+function onTimerEnd() {
+    playBeep();
+
+    if (mode === 'focus') {
+        // Log the completed focus session
+        const subject = document.getElementById('subjectSelect').value || 'General Study';
+        logSession(subject);
+        notify('Focus session complete! 🎯', `Great work on ${subject}. Time for a break.`);
+
+        if (round >= TOTAL_ROUNDS) {
+            round++;
+            setMode('long');
+        } else {
+            round++;
+            setMode('short');
+        }
+    } else if (mode === 'short') {
+        notify('Break over!', 'Back to focus. You can do it! 💪');
+        setMode('focus');
+    } else {
+        // After long break — reset
+        notify('Long break done!', 'Starting a fresh set of rounds.');
+        round = 1;
+        setMode('focus');
+    }
+
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+    startBtn.textContent = '▶ Start';
+}
+
+function logSession(subject) {
+    const hours = FOCUS_MINS / 60;
+    const now   = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+    // Log to progress tracker via Flask
+    const formData = new FormData();
+    formData.append('subject', subject);
+    formData.append('hours', hours.toFixed(2));
+    fetch('/pomodoro/log', { method: 'POST', body: formData });
+
+    // Show in local session list
+    sessionsToday.push({ subject, time: now });
+    renderLog();
+}
+
+function renderLog() {
+    if (sessionsToday.length === 0) return;
+    sessionLog.innerHTML = sessionsToday.map((s, i) =>
+        `<li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>🍅 <strong>${s.subject}</strong></span>
+            <span class="text-muted" style="font-size:0.85rem">${s.time} &nbsp;
+                <span class="badge bg-success">25 min logged</span>
+            </span>
+        </li>`
+    ).join('');
+}
+
+function notify(title, body) {
+    if (Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/static/favicon.ico' });
+    }
+}
+
+function playBeep() {
+    // Generate a beep using Web Audio API — no file needed
+    try {
+        const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type      = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.8);
+    } catch(e) {}
+}
+
+// Init display
+updateRing();
+</script>
+
+{% endblock %}

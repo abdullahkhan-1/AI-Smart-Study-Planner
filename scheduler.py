@@ -306,3 +306,79 @@ def compare_schedulers(tasks: list, available_hours_per_day: float) -> dict:
         "ai"     : evaluate(ai_schedule, tasks),
         "simple" : evaluate(simple_schedule, tasks),
     }
+# =============================================================================
+# ADAPTIVE RESCHEDULER
+# =============================================================================
+
+def adaptive_reschedule(tasks: list, completed_sessions: list,
+                         available_hours_per_day: float) -> dict:
+    """
+    Detects missed/incomplete hours per subject and rebuilds
+    the schedule using only the REMAINING hours needed.
+
+    Returns a dict with:
+      - new_schedule   : the updated AI schedule
+      - changes        : list of what was adjusted per task
+      - warnings       : tasks that can no longer be fully scheduled
+    """
+    today = date.today()
+
+    # --- Calculate completed hours per subject ---
+    completed_hours = {}
+    for session in completed_sessions:
+        subj = session["subject"]
+        completed_hours[subj] = completed_hours.get(subj, 0) + session["hours_done"]
+
+    # --- Build adjusted task list ---
+    adjusted_tasks = []
+    changes        = []
+
+    for task in tasks:
+        subj           = task["subject"]
+        original_hours = task["study_hours"]
+        done_hours     = completed_hours.get(subj, 0)
+        remaining      = max(0, original_hours - done_hours)
+
+        change = {
+            "subject"        : subj,
+            "deadline"       : str(task["deadline"]),
+            "original_hours" : original_hours,
+            "done_hours"     : round(done_hours, 2),
+            "remaining_hours": round(remaining, 2),
+            "status"         : ""
+        }
+
+        if remaining <= 0:
+            change["status"] = "complete"
+        elif task["deadline"] < today:
+            change["status"] = "overdue"
+        else:
+            change["status"] = "rescheduled"
+            adjusted_task = dict(task)
+            adjusted_task["study_hours"] = remaining
+            adjusted_tasks.append(adjusted_task)
+
+        changes.append(change)
+
+    # --- Run AI scheduler on adjusted tasks ---
+    new_schedule = {}
+    warnings     = []
+
+    if adjusted_tasks:
+        scheduler    = AIScheduler()
+        new_schedule = scheduler.generate_schedule(
+            adjusted_tasks, available_hours_per_day
+        )
+        # Collect any warnings from tasks that couldn't be fully scheduled
+        for t in adjusted_tasks:
+            if "warning" in t:
+                warnings.append({"subject": t["subject"], "message": t["warning"]})
+
+    # Sort by date
+    new_schedule = {k: v for k, v in sorted(new_schedule.items())}
+
+    return {
+        "new_schedule" : new_schedule,
+        "changes"      : changes,
+        "warnings"     : warnings,
+    }
