@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="fw-bold mb-1">✅ Study Progress</h2>
+<p class="text-muted mb-4">Track your completed study sessions</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-success">{{ summary.total_sessions }}</h1>
+            <p class="mb-0 text-muted">Sessions Completed</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-primary">{{ summary.total_hours }}h</h1>
+            <p class="mb-0 text-muted">Total Hours Studied</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-warning">{{ summary.subjects_done|length }}</h1>
+            <p class="mb-0 text-muted">Subjects Covered</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-dark text-white fw-bold">
+        <i class="bi bi-journal-check"></i> Completed Sessions
+    </div>
+    <div class="card-body p-0">
+        {% if completed %}
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Subject</th>
+                    <th>Date</th>
+                    <th>Hours Done</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in completed %}
+                <tr>
+                    <td class="fw-semibold">{{ session.subject }}</td>
+                    <td>{{ session.date }}</td>
+                    <td>{{ session.hours_done }}h</td>
+                    <td><span class="badge bg-success">Completed ✅</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-journal-x display-4"></i>
+            <p class="mt-2">No completed sessions yet. Go study! 💪</p>
+            <a href="/schedule" class="btn btn-primary">View Schedule</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

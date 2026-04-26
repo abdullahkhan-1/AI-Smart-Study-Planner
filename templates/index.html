@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col">
+        <h2 class="fw-bold">📚 Dashboard</h2>
+        <p class="text-muted">Your study tasks at a glance</p>
+    </div>
+    <div class="col-auto">
+        <a href="/add" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add New Task</a>
+        <a href="/schedule" class="btn btn-outline-dark ms-2"><i class="bi bi-calendar3"></i> Generate Schedule</a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-primary">{{ tasks|length }}</h1>
+            <p class="mb-0 text-muted">Total Tasks</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-danger">{{ tasks|selectattr("is_overdue")|list|length }}</h1>
+            <p class="mb-0 text-muted">Overdue</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-success">{{ summary.total_sessions }}</h1>
+            <p class="mb-0 text-muted">Sessions Done</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center p-3">
+            <h1 class="fw-bold text-warning">{{ summary.total_hours }}h</h1>
+            <p class="mb-0 text-muted">Hours Studied</p>
+        </div>
+    </div>
+</div>
+
+<!-- Task List -->
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <i class="bi bi-list-task"></i> All Tasks
+    </div>
+    <div class="card-body p-0">
+        {% if tasks %}
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Subject</th>
+                    <th>Deadline</th>
+                    <th>Difficulty</th>
+                    <th>Importance</th>
+                    <th>Hours Needed</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr class="{% if task.is_overdue %}table-danger{% endif %}">
+                    <td class="fw-semibold">{{ task.subject }}</td>
+                    <td>{{ task.deadline }}</td>
+                    <td>
+                        {% for i in range(task.difficulty) %}⭐{% endfor %}
+                        <span class="text-muted">({{ task.difficulty }}/5)</span>
+                    </td>
+                    <td>{{ task.importance }}/5</td>
+                    <td>{{ task.study_hours }}h</td>
+                    <td>
+                        {% if task.is_overdue %}
+                            <span class="badge bg-danger">Overdue</span>
+                        {% else %}
+                            <span class="badge bg-success">Active</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form action="/delete/{{ task.id }}" method="POST" style="display:inline">
+                            <button class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Delete this task?')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox display-4"></i>
+            <p class="mt-2">No tasks yet. <a href="/add">Add your first task!</a></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

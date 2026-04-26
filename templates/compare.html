@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="fw-bold mb-1">📊 Performance Comparison</h2>
+<p class="text-muted mb-4">AI Scheduler vs Simple FIFO Scheduler — same tasks, same hours</p>
+
+<div class="row g-4">
+
+    <!-- AI Scheduler Column -->
+    <div class="col-md-6">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white fw-bold">
+                🤖 AI Scheduler (Heuristic + Greedy EDF)
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <td>Tasks Scheduled</td>
+                        <td><strong class="text-success">{{ results.ai.tasks_scheduled }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Total Sessions</td>
+                        <td><strong>{{ results.ai.total_sessions }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Total Hours Allocated</td>
+                        <td><strong>{{ results.ai.total_hours }}h</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Days Used</td>
+                        <td><strong>{{ results.ai.days_used }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Balance Variance <small class="text-muted">(lower = better)</small></td>
+                        <td><strong class="text-success">{{ results.ai.balance_variance }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Tasks Missed</td>
+                        <td>
+                            {% if results.ai.tasks_missed %}
+                                <span class="text-danger">{{ results.ai.tasks_missed|join(", ") }}</span>
+                            {% else %}
+                                <span class="text-success">None ✅</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Scheduler Column -->
+    <div class="col-md-6">
+        <div class="card h-100 border-secondary">
+            <div class="card-header bg-secondary text-white fw-bold">
+                📋 Simple Scheduler (FIFO — Baseline)
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <td>Tasks Scheduled</td>
+                        <td><strong>{{ results.simple.tasks_scheduled }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Total Sessions</td>
+                        <td><strong>{{ results.simple.total_sessions }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Total Hours Allocated</td>
+                        <td><strong>{{ results.simple.total_hours }}h</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Days Used</td>
+                        <td><strong>{{ results.simple.days_used }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Balance Variance <small class="text-muted">(lower = better)</small></td>
+                        <td><strong class="text-danger">{{ results.simple.balance_variance }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Tasks Missed</td>
+                        <td>
+                            {% if results.simple.tasks_missed %}
+                                <span class="text-danger">{{ results.simple.tasks_missed|join(", ") }}</span>
+                            {% else %}
+                                <span class="text-success">None ✅</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interpretation -->
+<div class="card mt-4">
+    <div class="card-header bg-dark text-white fw-bold">📝 What This Shows</div>
+    <div class="card-body">
+        <ul>
+            <li>The <strong>AI Scheduler</strong> uses a <strong>weighted heuristic scoring formula</strong>
+                (50% deadline urgency + 30% difficulty + 20% importance) to prioritize tasks before scheduling.</li>
+            <li>The <strong>Simple Scheduler</strong> processes tasks in the order they were added —
+                no intelligence, no prioritization.</li>
+            <li>A <strong>lower balance variance</strong> means study load is distributed more evenly
+                across days — less burnout risk.</li>
+            <li>If the AI scheduler has <strong>fewer missed tasks</strong>, it proves that smart
+                prioritization ensures critical deadlines are met first.</li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}
