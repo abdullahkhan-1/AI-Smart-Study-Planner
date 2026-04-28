@@ -5,65 +5,112 @@
 <div class="col-md-7">
 
 <div class="card">
-    <div class="card-header bg-dark text-white">
+    <div class="card-header dark">
         <i class="bi bi-plus-circle"></i> Add New Study Task
     </div>
-    <div class="card-body p-4">
-        <form method="POST">
+    <div class="card-body" style="padding:28px">
+        <form method="POST" id="addForm">
 
             <div class="mb-3">
-                <label class="form-label fw-semibold">Subject / Task Name</label>
-                <input type="text" name="subject" class="form-control"
+                <label class="form-label">Subject / Task Name</label>
+                <input type="text" name="subject" id="subjectInput" class="form-control"
                     placeholder="e.g. Software Engineering, Calculus, Networks" required>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Deadline Date</label>
-                <input type="date" name="deadline" class="form-control" required>
+            <!-- NLP Deadline Input -->
+            <div class="mb-1">
+                <label class="form-label">
+                    Deadline
+                    <span class="badge bg-primary ms-2" style="font-size:10px;vertical-align:middle">
+                        AI-Powered
+                    </span>
+                </label>
+
+                <!-- Natural language input -->
+                <div class="d-flex gap-2 mb-2">
+                    <input type="text" id="nlpInput" class="form-control"
+                        placeholder='Type naturally: "next Friday", "in 2 weeks", "May 20"'>
+                    <button type="button" class="btn btn-outline-primary"
+                            style="white-space:nowrap" onclick="parseNLP()">
+                        <i class="bi bi-magic"></i> Parse
+                    </button>
+                </div>
+
+                <!-- Feedback message -->
+                <div id="nlpFeedback" style="display:none;font-size:13px;
+                     margin-bottom:10px;padding:8px 12px;border-radius:8px;">
+                </div>
+
+                <!-- Suggested chips -->
+                <div class="d-flex flex-wrap gap-2 mb-3" id="chips">
+                    <span class="chip" onclick="setNLP('tomorrow')">tomorrow</span>
+                    <span class="chip" onclick="setNLP('in 3 days')">in 3 days</span>
+                    <span class="chip" onclick="setNLP('next Friday')">next Friday</span>
+                    <span class="chip" onclick="setNLP('in 2 weeks')">in 2 weeks</span>
+                    <span class="chip" onclick="setNLP('end of month')">end of month</span>
+                    <span class="chip" onclick="setNLP('in 1 month')">in 1 month</span>
+                </div>
+
+                <!-- Actual date picker (fallback + auto-filled by NLP) -->
+                <div class="d-flex align-items-center gap-2">
+                    <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">
+                        Or pick manually:
+                    </span>
+                    <input type="date" name="deadline" id="deadlinePicker"
+                           class="form-control" required>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label fw-semibold">
-                    Difficulty Level
-                    <span class="text-muted fw-normal">(1 = Easy, 5 = Very Hard)</span>
-                </label>
-                <select name="difficulty" class="form-select">
-                    <option value="1">1 — Easy</option>
-                    <option value="2">2 — Fairly Easy</option>
-                    <option value="3" selected>3 — Medium</option>
-                    <option value="4">4 — Hard</option>
-                    <option value="5">5 — Very Hard</option>
-                </select>
-            </div>
+            <hr style="border-color:var(--border);margin:20px 0">
 
-            <div class="mb-3">
-                <label class="form-label fw-semibold">
-                    Importance Level
-                    <span class="text-muted fw-normal">(1 = Low, 5 = Critical)</span>
-                </label>
-                <select name="importance" class="form-select">
-                    <option value="1">1 — Low</option>
-                    <option value="2">2 — Moderate</option>
-                    <option value="3" selected>3 — Important</option>
-                    <option value="4">4 — Very Important</option>
-                    <option value="5">5 — Critical</option>
-                </select>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Difficulty
+                        <span class="text-muted fw-normal">(1 easy → 5 hard)</span>
+                    </label>
+                    <select name="difficulty" class="form-select">
+                        <option value="1">1 — Easy</option>
+                        <option value="2">2 — Fairly Easy</option>
+                        <option value="3" selected>3 — Medium</option>
+                        <option value="4">4 — Hard</option>
+                        <option value="5">5 — Very Hard</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">
+                        Importance
+                        <span class="text-muted fw-normal">(1 low → 5 critical)</span>
+                    </label>
+                    <select name="importance" class="form-select">
+                        <option value="1">1 — Low</option>
+                        <option value="2">2 — Moderate</option>
+                        <option value="3" selected>3 — Important</option>
+                        <option value="4">4 — Very Important</option>
+                        <option value="5">5 — Critical</option>
+                    </select>
+                </div>
             </div>
 
             <div class="mb-4">
-                <label class="form-label fw-semibold">
+                <label class="form-label">
                     Total Study Hours Needed
-                    <span class="text-muted fw-normal">(How many hours to prepare for this?)</span>
+                    <span class="text-muted fw-normal">
+                        — or use
+                        <a href="/predict" target="_blank"
+                           style="color:var(--accent)">ML Predictor</a>
+                        to estimate
+                    </span>
                 </label>
                 <input type="number" name="study_hours" class="form-control"
                     min="1" max="50" step="0.5" value="5" required>
             </div>
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary px-4">
+                <button type="submit" class="btn btn-primary btn-lg">
                     <i class="bi bi-plus-circle"></i> Add Task
                 </button>
-                <a href="/" class="btn btn-outline-secondary">Cancel</a>
+                <a href="/" class="btn btn-outline-secondary btn-lg">Cancel</a>
             </div>
 
         </form>
@@ -72,5 +119,89 @@
 
 </div>
 </div>
+
+<style>
+.chip {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 12.5px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+    user-select: none;
+}
+.chip:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+</style>
+
+<script>
+// Auto-parse when user stops typing in NLP box (500ms debounce)
+let debounceTimer;
+document.getElementById('nlpInput').addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    if (this.value.trim().length < 2) {
+        hideFeedback();
+        return;
+    }
+    debounceTimer = setTimeout(() => parseNLP(), 500);
+});
+
+// Also parse on Enter key
+document.getElementById('nlpInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); parseNLP(); }
+});
+
+function setNLP(text) {
+    document.getElementById('nlpInput').value = text;
+    parseNLP();
+}
+
+function parseNLP() {
+    const text = document.getElementById('nlpInput').value.trim();
+    if (!text) return;
+
+    const formData = new FormData();
+    formData.append('text', text);
+
+    fetch('/parse-date', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+            const feedback = document.getElementById('nlpFeedback');
+            const picker   = document.getElementById('deadlinePicker');
+
+            feedback.style.display = 'block';
+
+            if (data.success) {
+                picker.value = data.date_str;
+                feedback.style.background = '#dcfce7';
+                feedback.style.color      = '#14532d';
+                feedback.style.border     = '1px solid #bbf7d0';
+                feedback.innerHTML = `✅ <strong>${data.message}</strong>`;
+            } else {
+                feedback.style.background = '#fff7ed';
+                feedback.style.color      = '#9a3412';
+                feedback.style.border     = '1px solid #fed7aa';
+                feedback.innerHTML = `⚠ ${data.message}`;
+            }
+        })
+        .catch(() => {
+            hideFeedback();
+        });
+}
+
+function hideFeedback() {
+    document.getElementById('nlpFeedback').style.display = 'none';
+}
+
+// Prefill subject from ML Predict page if passed via URL
+const params = new URLSearchParams(window.location.search);
+if (params.get('subject')) document.getElementById('subjectInput').value = params.get('subject');
+</script>
 
 {% endblock %}

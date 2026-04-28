@@ -1,37 +1,75 @@
 # Smart Study Planner 📚
-**AI-Based Study Scheduling System | SE Spring 2026**
+**AI-Based Study Scheduling System | SE + AI Spring 2026**
 FAST NUCES, Karachi — CS Department
 
 ## Group Members
-| Roll No | Name |
-|---|---|
-| 23k-0525 | Abdullah Khan |
-| 23k-0878 | Ammar Khan |
-| 23K-0692 | Hasnain Kazmi |
+| Roll No     | Name          | Role                        |
+|-------------|---------------|-----------------------------|
+| 23k-0525    | Abdullah Khan | Project Lead + AI Logic     |
+| 23k-0878    | Ammar Khan    | Frontend + Testing          |
+| 23K-0692    | Hasnain Kazmi | SRS Report + UML Diagrams   |
+
+---
 
 ## About
-An AI-powered web application that generates optimized study schedules using:
-- **Heuristic Priority Scoring** (deadline urgency + difficulty + importance)
-- **Greedy EDF Scheduling Algorithm**
-- **Performance comparison** vs simple FIFO scheduling
+An AI-powered web application that generates optimized study schedules using
+heuristic priority scoring, Greedy EDF scheduling, and Machine Learning.
+
+---
+
+## Features
+| Feature                     | Category     |
+|-----------------------------|--------------|
+| AI Scheduler (Heuristic + Greedy EDF) | Core AI |
+| Simple FIFO Scheduler (baseline)      | Comparison  |
+| Performance Comparison (AI vs Simple) | Analytics   |
+| ML Study Time Predictor (Linear Regression) | Tier 2 AI |
+| NLP Deadline Parser         | Tier 2 AI    |
+| Visual Analytics Dashboard  | Tier 1       |
+| Pomodoro Timer              | Tier 1       |
+| Adaptive Rescheduling       | Tier 1       |
+
+---
 
 ## Design Patterns Used
-- **Strategy Pattern** — Swappable scheduling algorithms (AIScheduler / SimpleScheduler)
-- **Singleton Pattern** — Single shared database connection
-- **MVC Pattern** — Flask (Controller) + Templates (View) + Models (Model)
+| Pattern          | Where                          |
+|------------------|--------------------------------|
+| Strategy Pattern | scheduler.py — swappable algorithms |
+| Singleton Pattern| models.py — one DB connection  |
+| MVC Pattern      | app.py + templates/ + models.py|
+
+---
+
+## Tech Stack
+| Layer    | Technology                        |
+|----------|-----------------------------------|
+| Backend  | Python + Flask                    |
+| Database | PostgreSQL (hosted on Supabase)   |
+| ML       | scikit-learn (Linear Regression)  |
+| NLP      | dateparser + custom patterns      |
+| Frontend | HTML + CSS + Chart.js             |
+
+---
 
 ## Setup Instructions
 
-### 1. Install Python
-Download from https://python.org — make sure to check "Add to PATH"
+### 1. Clone the repository
+```
+git clone https://github.com/YOUR_USERNAME/smart-study-planner.git
+cd smart-study-planner
+```
 
-### 2. Open terminal in this folder
-Right-click the project folder → "Open in Terminal"
-
-### 3. Install dependencies
+### 2. Install dependencies
 ```
 pip install -r requirements.txt
 ```
+
+### 3. Create a `.env` file
+Create a file called `.env` in the project root:
+```
+DATABASE_URL=postgresql://postgres.xxxx:PASSWORD@host:5432/postgres
+```
+Get this connection string from the Supabase dashboard → Direct connection.
 
 ### 4. Run the app
 ```
@@ -39,14 +77,39 @@ python app.py
 ```
 
 ### 5. Open in browser
-Go to: http://127.0.0.1:5000
+```
+http://127.0.0.1:5000
+```
+
+---
 
 ## Project Structure
 ```
 smart-study-planner/
-├── app.py          ← Flask web app (Controller)
-├── scheduler.py    ← AI scheduling engine
-├── models.py       ← Database layer (Model)
-├── templates/      ← HTML pages (View)
-└── requirements.txt
+├── app.py           ← Flask web app (MVC Controller)
+├── scheduler.py     ← AI scheduling engine (Strategy Pattern)
+├── models.py        ← PostgreSQL database layer (Singleton Pattern)
+├── ml_predictor.py  ← scikit-learn ML model
+├── nlp_parser.py    ← Natural language deadline parser
+├── requirements.txt ← Python dependencies
+├── .env             ← Database credentials (NOT committed to GitHub)
+├── .gitignore       ← Excludes .env and cache files
+└── templates/       ← HTML pages (MVC View)
+    ├── base.html
+    ├── index.html
+    ├── add_task.html
+    ├── schedule.html
+    ├── compare.html
+    ├── analytics.html
+    ├── pomodoro.html
+    ├── reschedule.html
+    ├── predict.html
+    └── progress.html
 ```
+
+---
+
+## ⚠️ Important Note for Teammates
+The `.env` file is NOT on GitHub (intentionally — it contains the database password).
+Each group member must create their own `.env` file manually using the
+connection string shared privately by the group leader.

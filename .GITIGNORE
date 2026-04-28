@@ -1,0 +1,17 @@
+# Environment variables (contains database password — NEVER commit this)
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# SQLite (old database — replaced by Supabase)
+*.db
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

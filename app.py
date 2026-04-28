@@ -13,6 +13,7 @@ from datetime import date
 from models import TaskModel, ProgressModel
 from scheduler import SchedulerContext, AIScheduler, SimpleScheduler, compare_schedulers
 from ml_predictor import get_predictor
+from nlp_parser import parse_deadline
 
 app = Flask(__name__)
 app.secret_key = "study_planner_secret_2026"   # Needed for flash messages
@@ -315,6 +316,15 @@ def predict():
         form_data    = form_data,
         tasks        = tasks,
     )
+# =============================================================================
+# Route 12: NLP Date Parser API (called by the Add Task form via JavaScript)
+# =============================================================================
+
+@app.route("/parse-date", methods=["POST"])
+def parse_date():
+    text   = request.form.get("text", "")
+    result = parse_deadline(text)
+    return jsonify(result)
 # =============================================================================
 # Run the app
 # =============================================================================
