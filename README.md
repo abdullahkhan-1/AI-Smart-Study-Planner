@@ -6,8 +6,8 @@ FAST NUCES, Karachi — CS Department
 | Roll No     | Name          | Role                        |
 |-------------|---------------|-----------------------------|
 | 23k-0525    | Abdullah Khan | Project Lead + AI Logic     |
-| 23k-0878    | Ammar Khan    | Frontend + Testing          |
-| 23K-0692    | Hasnain Kazmi | SRS Report + UML Diagrams   |
+| 23k-0878    | Ammar Khan    | Frontend                    |
+| 23K-0692    | Hasnain Kazmi | SRS Report                  |
 
 ---
 
@@ -18,16 +18,16 @@ heuristic priority scoring, Greedy EDF scheduling, and Machine Learning.
 ---
 
 ## Features
-| Feature                     | Category     |
-|-----------------------------|--------------|
-| AI Scheduler (Heuristic + Greedy EDF) | Core AI |
-| Simple FIFO Scheduler (baseline)      | Comparison  |
-| Performance Comparison (AI vs Simple) | Analytics   |
-| ML Study Time Predictor (Linear Regression) | Tier 2 AI |
-| NLP Deadline Parser         | Tier 2 AI    |
-| Visual Analytics Dashboard  | Tier 1       |
-| Pomodoro Timer              | Tier 1       |
-| Adaptive Rescheduling       | Tier 1       |
+| Feature                     |
+|-----------------------------|
+| AI Scheduler (Heuristic + Greedy EDF) | 
+| Simple FIFO Scheduler (baseline)      |
+| Performance Comparison (AI vs Simple) |
+| ML Study Time Predictor (Linear Regression) |
+| NLP Deadline Parser         | 
+| Visual Analytics Dashboard  | 
+| Pomodoro Timer              | 
+| Adaptive Rescheduling       | 
 
 ---
 
